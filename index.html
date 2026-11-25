@@ -514,6 +514,32 @@ function nailPath(s,cx,cy,w,l){const L=cx-w/2,R=cx+w/2,cb=cy-w*.14,t=cy-l;let ti
 const heartP='M0,.42 C-.62,0 -.45,-.6 0,-.24 C.45,-.6 .62,0 0,.42Z';
 function starPts(n,ro,ri){let s='';for(let i=0;i<n*2;i++){const r=i%2?ri:ro,a=-Math.PI/2+i*Math.PI/n;s+=`${(Math.cos(a)*r).toFixed(3)},${(Math.sin(a)*r).toFixed(3)} `}return s}
 /* 스티커·3D 파츠 (단위 크기 약 1, s배로 키워요) */
+/* 글리터 스티커 종류: c=색, w=[가루,육각,링,별,하트] 비율, n=조각 수, z=크기, lay=뿌리는 모양, tw=반짝임 수, ed=테두리색 */
+const GLIT={
+ sparkle:{c:['#eef2f7','#cfd8e3','#ffffff','#7fe3f0','#4fb0ff','#ff9ad5','#ffe27a','#b89cff','#9ff5c8','#dfe6ee'],w:[58,16,10,11,5],n:85,z:1,lay:'cluster',tw:7},
+ g_rose:{c:['#f7c6c0','#e8a598','#ffd9cf','#d98c7e','#fff1ea','#f5b3a8','#ffffff'],w:[86,8,0,6,0],n:120,z:.75,lay:'cluster',tw:5,ed:'#a0615a'},
+ g_gold:{c:['#ffe27a','#f5c542','#fff4c2','#d9a31a','#ffeaa0','#ffffff'],w:[35,5,0,60,0],n:55,z:1.05,lay:'full',tw:6,ed:'#9a6b00'},
+ g_silver:{c:['#ffffff','#eef2f7','#cfd8e3','#b7c2cf','#e6ecf3','#dfe6ee'],w:[30,60,5,5,0],n:60,z:1.35,lay:'cluster',tw:9,ed:'#6f7a8a'},
+ g_ocean:{c:['#7fe3f0','#4fb0ff','#2f7de0','#b5f1ff','#9ff5c8','#ffffff'],w:[60,15,15,10,0],n:95,z:.95,lay:'line',tw:6,ed:'#2a5c8a'},
+ g_candy:{c:['#ffb3d9','#c9b3ff','#b3f0ff','#fff2a8','#b3ffd9','#ffd1b3','#ffffff'],w:[35,0,10,10,45],n:55,z:1.15,lay:'heart',tw:4,ed:'#b0608a'},
+ g_galaxy:{c:['#6a3fb5','#3a3aa8','#b89cff','#ff7ad5','#7fe3f0','#ffffff','#2b2b6b'],w:[60,10,5,25,0],n:100,z:.95,lay:'cluster',tw:12,ed:'#2b1f55'},
+ g_rainbow:{c:['#ff6b8a','#ffa94d','#ffe066','#69db7c','#4dabf7','#9775fa'],w:[50,5,40,5,0],n:80,z:1,lay:'tip',tw:5,ed:'#5a4a7a'},
+ g_pinkheart:{c:['#ff5c9a','#ff9cc5','#ffd1e3','#ffffff','#ff3d7f'],w:[65,0,0,0,35],n:90,z:.85,lay:'heart',tw:5,ed:'#a8325f'}};
+function glitterXY(lay,Q){
+ if(lay==='full')return [(Q()-.5)*1.15,-.95+Q()*1.8];
+ if(lay==='tip'){const x=(Q()-.5)*1.1;return [x,-1.08+.34*Math.pow(x/.55,2)+Math.pow(Q(),1.8)*.4]}
+ if(lay==='line'){const t=Q(),g=()=>(Q()+Q()+Q()-1.5)*.13;return [-.5+1.0*t+g(),.75-1.6*t+g()]}
+ if(lay==='heart'){for(let i=0;i<40;i++){const x=Q()*2-1,y=Q()*2-1,yy=-y;if(Math.pow(x*x+yy*yy-1,3)-x*x*yy*yy*yy<=0)return [x*.55,y*.55-.05]}return [0,0]}
+ const a=Q()*Math.PI*2,r=.56*Math.pow(Q(),1.15);return [Math.cos(a)*r,Math.sin(a)*r*.9]}
+function glitterMix(sp,seed){const Q=rnd(seed),C=sp.c,ed=sp.ed||'#6d6690',W=sp.w,tot=W.reduce((p,q)=>p+q,0),z=sp.z||1;let g='';
+ for(let j=0;j<sp.n;j++){const [x0,y0]=glitterXY(sp.lay,Q),px=x0.toFixed(3),py=y0.toFixed(3),c=C[Math.floor(Q()*C.length)],rot=Math.floor(Q()*90);let t=Q()*tot,ty=0;while(ty<4&&t>=W[ty]){t-=W[ty];ty++}
+  if(ty===0){const d=((.012+Q()*.026)*z).toFixed(3);g+=`<circle cx="${px}" cy="${py}" r="${d}" fill="${c}" stroke="${ed}" stroke-width=".005" stroke-opacity=".45"/>`}
+  else if(ty===1){const d=(.035+Q()*.03)*z;g+=`<g transform="translate(${px},${py}) rotate(${rot})"><polygon points="${[0,1,2,3,4,5].map(i=>{const q=i*Math.PI/3;return (Math.cos(q)*d).toFixed(3)+','+(Math.sin(q)*d).toFixed(3)}).join(' ')}" fill="${c}" stroke="${ed}" stroke-width=".006" stroke-opacity=".5"/><polygon points="0,0 ${d.toFixed(3)},0 ${(d/2).toFixed(3)},${(-d*.866).toFixed(3)} ${(-d/2).toFixed(3)},${(-d*.866).toFixed(3)}" fill="#fff" opacity=".45"/></g>`}
+  else if(ty===2){const d=(.03+Q()*.022)*z;g+=`<circle cx="${px}" cy="${py}" r="${d.toFixed(3)}" fill="none" stroke="${c}" stroke-width="${(d*.55).toFixed(3)}"/><circle cx="${px}" cy="${py}" r="${(d*1.27).toFixed(3)}" fill="none" stroke="${ed}" stroke-width=".005" stroke-opacity=".4"/>`}
+  else if(ty===3){const d=(.05+Q()*.035)*z;g+=`<polygon points="${starPts(5,d,d*.45)}" transform="translate(${px},${py}) rotate(${rot})" fill="${c}" stroke="${ed}" stroke-width=".006" stroke-opacity=".5"/>`}
+  else{const d=(.07+Q()*.02)*z;g+=`<path d="${heartP}" transform="translate(${px},${py}) scale(${d.toFixed(3)}) rotate(${rot-45})" fill="${c}" stroke="${ed}" stroke-width=".08" stroke-opacity=".45"/>`}}
+ for(let j=0;j<(sp.tw||0);j++){const [x0,y0]=glitterXY(sp.lay,Q);g+=`<polygon points="${starPts(4,.05,.008)}" transform="translate(${x0.toFixed(3)},${y0.toFixed(3)})" fill="#fff"/>`}
+ return g}
 let stkN=0;
 function sticker(k,x,y,s,p){p=p||'';const T=`transform="translate(${x},${y}) scale(${s})"`;
  const u='sk'+(++stkN),G=(id,body,x)=>`<radialGradient id="${u}${id}" cx="${x||'.38'}" cy=".3" r=".8">${body}</radialGradient>`,S=(o,c,op)=>`<stop offset="${o}" stop-color="${c}"${op!=null?` stop-opacity="${op}"`:''}/>`;
@@ -525,16 +551,8 @@ function sticker(k,x,y,s,p){p=p||'';const T=`transform="translate(${x},${y}) sca
  if(k==='star'){const P=[];for(let i=0;i<10;i++){const r=i%2?.22:.5,a=-Math.PI/2+i*Math.PI/5;P.push([Math.cos(a)*r,Math.sin(a)*r])}
   return `<g ${T}><defs><linearGradient id="${u}g" x1="0" y1="0" x2="1" y2="1">${S(0,'#fff7c4')+S(.45,'#ffd34d')+S(1,'#d99a14')}</linearGradient></defs><polygon points="${P.map(q=>q.map(v=>v.toFixed(3)).join(',')).join(' ')}" fill="url(#${u}g)"/>${P.map((q,j)=>{const r=P[(j+1)%10];return `<polygon points="0,0 ${q[0].toFixed(3)},${q[1].toFixed(3)} ${r[0].toFixed(3)},${r[1].toFixed(3)}" fill="${j%2?'#8a5a00':'#fffbe0'}" opacity="${j%2?.22:.5}"/>`}).join('')}<polygon points="${P.map(q=>q.map(v=>v.toFixed(3)).join(',')).join(' ')}" fill="none" stroke="#c88a10" stroke-width=".025"/><circle cx="-.08" cy="-.16" r=".04" fill="#fff"/></g>`}
  /* 빛이 번지는 반짝 */
- /* 홀로그램 글리터 한 줌: 작은 가루·육각·링·별·하트 조각이 흩뿌려져요 */
- if(k==='sparkle'){const Q=rnd(Math.round(Math.abs(x*7+y*13))+11),C=['#eef2f7','#cfd8e3','#ffffff','#7fe3f0','#4fb0ff','#ff9ad5','#ffe27a','#b89cff','#9ff5c8','#dfe6ee'],ed='#6d6690';let g='';
-  for(let j=0;j<85;j++){const a=Q()*Math.PI*2,r=.56*Math.pow(Q(),1.15),px=(Math.cos(a)*r).toFixed(3),py=(Math.sin(a)*r*.9).toFixed(3),c=C[Math.floor(Q()*C.length)],t=Q(),rot=Math.floor(Q()*90);
-   if(t<.58){const d=(.012+Q()*.026).toFixed(3);g+=`<circle cx="${px}" cy="${py}" r="${d}" fill="${c}" stroke="${ed}" stroke-width=".005" stroke-opacity=".45"/>`}
-   else if(t<.74){const d=.035+Q()*.03;g+=`<g transform="translate(${px},${py}) rotate(${rot})"><polygon points="${[0,1,2,3,4,5].map(i=>{const q=i*Math.PI/3;return (Math.cos(q)*d).toFixed(3)+','+(Math.sin(q)*d).toFixed(3)}).join(' ')}" fill="${c}" stroke="${ed}" stroke-width=".006" stroke-opacity=".5"/><polygon points="0,0 ${d.toFixed(3)},0 ${(d/2).toFixed(3)},${(-d*.866).toFixed(3)} ${(-d/2).toFixed(3)},${(-d*.866).toFixed(3)}" fill="#fff" opacity=".45"/></g>`}
-   else if(t<.84){const d=.03+Q()*.022;g+=`<circle cx="${px}" cy="${py}" r="${d.toFixed(3)}" fill="none" stroke="${c}" stroke-width="${(d*.55).toFixed(3)}"/><circle cx="${px}" cy="${py}" r="${(d*1.27).toFixed(3)}" fill="none" stroke="${ed}" stroke-width=".005" stroke-opacity=".4"/>`}
-   else if(t<.95){const d=.05+Q()*.035;g+=`<polygon points="${starPts(5,d,d*.45)}" transform="translate(${px},${py}) rotate(${rot})" fill="${c}" stroke="${ed}" stroke-width=".006" stroke-opacity=".5"/>`}
-   else{const d=.07+Q()*.02;g+=`<path d="${heartP}" transform="translate(${px},${py}) scale(${d.toFixed(3)}) rotate(${rot-45})" fill="${c}" stroke="${ed}" stroke-width=".08" stroke-opacity=".45"/>`}}
-  for(let j=0;j<7;j++){const a=Q()*Math.PI*2,r=.4*Q();g+=`<polygon points="${starPts(4,.05,.008)}" transform="translate(${(Math.cos(a)*r).toFixed(3)},${(Math.sin(a)*r).toFixed(3)})" fill="#fff"/>`}
-  return `<g ${T}>${g}</g>`}
+ /* 글리터 스티커 (여러 색·모양·뿌리는 방식) */
+ if(GLIT[k])return `<g ${T}>${glitterMix(GLIT[k],Math.round(Math.abs(x*7+y*13))+k.length*31)}</g>`;
  /* 라운드 브릴리언트 컷 큐빅 */
  if(k==='gem'){const O=[...Array(8)].map((_,i)=>{const a=(i*45+22.5)*Math.PI/180;return [Math.cos(a)*.46,Math.sin(a)*.46]}),I=[...Array(8)].map((_,i)=>{const a=(i*45+22.5)*Math.PI/180;return [Math.cos(a)*.22,Math.sin(a)*.22]}),f=v=>v.toFixed(3);
   return `<g ${T}><defs>${G('g',S(0,'#f4fbff')+S(.45,'#9fd8ff')+S(1,'#8a74e6'))}</defs><circle r=".5" fill="#c9c3d6"/><circle r=".46" fill="url(#${u}g)"/>${O.map((q,i)=>{const r=O[(i+1)%8],a=I[i],b2=I[(i+1)%8];return `<polygon points="${f(q[0])},${f(q[1])} ${f(r[0])},${f(r[1])} ${f(b2[0])},${f(b2[1])} ${f(a[0])},${f(a[1])}" fill="${i%2?'#ffffff':'#3d2f8f'}" opacity="${i%2?.42:.16}"/><line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f((q[0]+r[0])/2)}" y2="${f((q[1]+r[1])/2)}" stroke="#fff" stroke-width=".015" opacity=".7"/>`}).join('')}<polygon points="${I.map(q=>f(q[0])+','+f(q[1])).join(' ')}" fill="#eef9ff" opacity=".8" stroke="#fff" stroke-width=".02"/><polygon points="${starPts(4,.2,.03)}" fill="#fff" transform="translate(-.18,-.2)"/><circle r=".5" fill="none" stroke="#fff" stroke-width=".03" opacity=".6"/></g>`}
@@ -633,7 +651,7 @@ function handsSVG(nails,shape,skin,P,rows,sel,click){const sk=SKINS[skin]||SKINS
    const shade=`${full}fill="url(#${id}cv)"/>${full}fill="url(#${id}cu)"/>`;
    /* ⑤ 젤 탑코트 광택 */
    const gloss=n.fin==='matte'&&n.c?`${full}fill="#fff" opacity=".07"/>`:`${full}fill="url(#${id}nb)"/><path d="M${Lx+nw*.17},${cy-nw*.28} Q${Lx+nw*.1},${(t+cy)/2} ${Lx+nw*.2},${t-nw*.18}" fill="none" stroke="#fff" stroke-width="${nw*.13}" stroke-linecap="round" opacity=".45" filter="url(#${P}blur3)"/><path d="M${Lx+nw*.17},${cy-nw*.3} Q${Lx+nw*.11},${(t+cy)/2} ${Lx+nw*.2},${t-nw*.16}" fill="none" stroke="#fff" stroke-width="${nw*.055}" stroke-linecap="round" opacity=".85"/><path d="M${Lx+nw*.84},${cy-nw*.45} Q${Lx+nw*.89},${(t+cy)/2+nw*.1} ${Lx+nw*.83},${t+nw*.15}" fill="none" stroke="#fff" stroke-width="${nw*.03}" stroke-linecap="round" opacity=".4"/><ellipse cx="${cx+nw*.08}" cy="${cy-nw*.08}" rx="${nw*.16}" ry="${nw*.05}" fill="#fff" opacity=".35" filter="url(#${P}soft)"/>`;
-   const stS=nw*.52*(['bear','teddy','bunny','peach','rose3d','bow3d','heart3d'].includes(n.st)?1.45:n.st==='sparkle'?1.3:1.18);
+   const stS=nw*.52*(['bear','teddy','bunny','peach','rose3d','bow3d','heart3d'].includes(n.st)?1.45:GLIT[n.st]?1.3:1.18);
    const stk=n.st&&n.st!=='none'?`<g filter="url(#${P}c3)">${sticker(n.st,cx,cy-l*.42,stS,P)}</g>`:'';const knY=top+f.w*1.95;
    body+=`<g ${click?`class="nailg" onclick="nailPick(${i})"`:''} transform="rotate(${rot} ${cx} ${oy+650})" filter="url(#${P}sh)">
     <path d="M${cx-f.w/2},${oy+760} L${cx-f.w/2},${top+f.w/2} A${f.w/2},${f.w/2} 0 0 1 ${cx+f.w/2},${top+f.w/2} L${cx+f.w/2},${oy+760}Z" fill="url(#${P}skinG)"/>
@@ -654,7 +672,7 @@ function saveNail(){data.nail=nail;save()}
 const NAIL_TABS=[['color','🎨 색깔'],['finish','✨ 마감'],['pattern','🌀 무늬'],['sticker','🌸 스티커'],['shape','💅 모양·피부']];
 const FIN=[['gloss','💧','글로시',''],['matte','🧁','매트',''],['glitter','✨','반짝이',''],['chrome','🪩','크롬·펄',''],['jelly','🍬','젤리',''],['cateye','🐱','캣아이','gem'],['holo','🌈','홀로그램','glitter'],['sheer','🫧','누드 시어',''],['aurora','🌊','오로라 유리',''],['pearl','🦄','유니콘 펄','']];
 const PAT=[['none','⚪','없음'],['french','🤍','프렌치'],['ombre','🌅','그라데이션'],['dots','🫧','땡땡이'],['stripe','〰️','줄무늬'],['hearts','💗','하트'],['marble','🌫️','마블'],['tips','➰','라인'],['fruit','🍒','과일 그림'],['milk','🥛','우유 드립'],['blush','🌸','볼터치'],['glittertip','🌟','별빛 글리터'],['wave','🌊','물결 3D'],['unicorn','🦄','유니콘 결']];
-const STK=[['none','⚪','없음',''],['flower','🌸','꽃',''],['heart','💗','하트',''],['star','⭐','별',''],['sparkle','✨','홀로 글리터',''],['gem','💎','보석','gem'],['pearl','🫧','진주','gem'],['butterfly','🦋','나비','butterfly'],['bow','🎀','리본','ribbon'],['heart3d','🤍','말랑 하트',''],['peach','🍑','복숭아 참',''],['bear','🐻‍❄️','하얀 곰돌이',''],['teddy','🧸','갈색 곰돌이',''],['bunny','🐰','말랑 토끼',''],['rose3d','🌹','3D 장미',''],['bow3d','🎀','진주 리본','ribbon'],['drops','💧','물방울','']];
+const STK=[['none','⚪','없음',''],['flower','🌸','꽃',''],['heart','💗','하트',''],['star','⭐','별',''],['sparkle','✨','홀로 글리터',''],['g_rose','🍑','로즈골드 가루',''],['g_gold','🌟','골드 별무리',''],['g_silver','🤍','실버 다이아',''],['g_ocean','🌊','바다 물결',''],['g_candy','🍬','캔디 하트',''],['g_galaxy','🌌','갤럭시',''],['g_rainbow','🌈','무지개 링',''],['g_pinkheart','💗','핑크 하트 가루',''],['gem','💎','보석','gem'],['pearl','🫧','진주','gem'],['butterfly','🦋','나비','butterfly'],['bow','🎀','리본','ribbon'],['heart3d','🤍','말랑 하트',''],['peach','🍑','복숭아 참',''],['bear','🐻‍❄️','하얀 곰돌이',''],['teddy','🧸','갈색 곰돌이',''],['bunny','🐰','말랑 토끼',''],['rose3d','🌹','3D 장미',''],['bow3d','🎀','진주 리본','ribbon'],['drops','💧','물방울','']];
 const SHAPES=[['round','라운드'],['oval','오벌'],['almond','아몬드'],['square','스퀘어'],['stiletto','스틸레토']];
 function optBtns(list,cur,fn){return list.map(o=>{const lk=o[3]&&!has(o[3]);return `<button class="opt ${o[0]===cur?'on':''} ${lk?'locked':''}" onclick="${lk?`lockedMsg('${o[3]}')`:`${fn}('${o[0]}')`}"><span class="ic">${lk?'🔒':o[1]}</span>${o[2]}</button>`}).join('')}
 function nailTool(){$('#nailTabs').innerHTML=NAIL_TABS.map(([k,n])=>`<button class="${k===nTab?'on':''}" onclick="nTab='${k}';nailTool()">${n}</button>`).join('');
@@ -685,6 +703,7 @@ const PRESETS=[
  {id:'bear3d',name:'말랑 곰돌이 3D',desc:'뽀얀 누드 바탕에 하얀 곰·갈색 곰·토끼 얼굴이 볼록 올라와요',shape:'round',q:'3D nail art',kw:'캐릭터 3D 네일',f:k=>({c:'#fbe6dc',fin:'gloss',pat:k===2?'blush':'none',c2:'#ff9fb6',st:['bear','none','teddy','bunny','bear'][k]})},
  {id:'aurora',name:'오로라 물결 유리',desc:'투명한 바다색 유리 위로 물결이 볼록, 물방울과 나비가 반짝',shape:'stiletto',q:'aurora nails',kw:'오로라 물결 네일',f:k=>({c:['#5fb8f0','#7ec8f5','#4a9be8','#8fd3ff','#69b8ee'][k],fin:'aurora',pat:k===2?'none':'wave',c2:'#d9f4ff',st:k===2?'butterfly':k===4?'drops':'none'})},
  {id:'unicorn',name:'유니콘 펄 & 장미',desc:'오묘한 펄에 유니콘 뿔 결, 3D 장미와 진주 리본 (🎀 리본 세트 필요)',shape:'stiletto',need:'ribbon',q:'unicorn nail art',kw:'유니콘 네일',f:k=>({c:['#e8d6ff','#f6d9ef','#dcd4ff','#cfe4ff','#efd8ff'][k],fin:'pearl',pat:k===3?'unicorn':'none',c2:'#fff',st:['bow3d','rose3d','none','none','rose3d'][k]})},
+ {id:'glitparty',name:'공주님 반짝이 파티',desc:'손가락마다 다른 글리터 스티커! 로즈골드·갤럭시·캔디 하트·무지개·골드 별',shape:'oval',q:'glitter nail art',kw:'글리터 네일',f:k=>({c:['#ffd9df','#4b3a8c','#fff0f6','#f4f1ff','#fff7e0'][k],fin:'gloss',pat:'none',c2:'#fff',st:['g_rose','g_galaxy','g_candy','g_rainbow','g_gold'][k]})},
  {id:'starglit',name:'별빛 글리터 그라데이션',desc:'맑은 누드 위로 홀로그램 반짝이와 별 조각이 손끝에 몽글몽글',shape:'round',q:'glitter nails',kw:'별 글리터 네일',f:k=>({c:'#f7cfd2',fin:'sheer',pat:'glittertip',c2:'#fff',st:'none'})}];
 const presetNails=pr=>[0,1,2,3,4,0,1,2,3,4].map(k=>({...blankNail(),...pr.f(k)}));
 function renderPresets(){const h=$('#presets');if(!h)return;h.innerHTML=PRESETS.map(pr=>`<div class="item preset"><svg viewBox="0 0 980 440">${handsSVG(presetNails(pr),pr.shape,nail.skin,'p'+pr.id,[[1,0]],null,false)}</svg>
@@ -724,6 +743,7 @@ const NREQ=[
  ['🍒','여름이니까 과일 그림 네일 해 주세요!',[['과일 그림 무늬 6개 이상',n=>n.filter(x=>x.pat==='fruit').length>=6],['비치는 누드·젤리 마감',n=>n.some(x=>x.fin==='sheer'||x.fin==='jelly')]]],
  ['🧸','손톱에 말랑한 동물 친구를 올려 주세요!',[['곰돌이나 토끼 3D 파츠 2개 이상',n=>n.filter(x=>['bear','teddy','bunny'].includes(x.st)).length>=2]]],
  ['🧜','투명한 바다 같은 오로라 물결 네일이요!',[['오로라 유리 마감 6개 이상',n=>n.filter(x=>x.fin==='aurora').length>=6],['물결이나 물방울',n=>n.some(x=>x.pat==='wave'||x.st==='drops')]]],
+ ['👸','반짝이를 제일 좋아해요! 손가락마다 다른 반짝이로요!',[['서로 다른 글리터 스티커 3종 이상',n=>new Set(n.map(x=>x.st).filter(v=>GLIT[v])).size>=3],['글리터 스티커 6개 이상',n=>n.filter(x=>GLIT[x.st]).length>=6]]],
  ['🍼','딸기우유가 주르륵 흐르는 네일 해 줄래요?',[['우유 드립 무늬',n=>n.some(x=>x.pat==='milk')],['말랑 하트',n=>n.some(x=>x.st==='heart3d')]]]];
 function dayPick(list,salt){const s=today().split('-').join('')*1+salt+(data.reqShift&&data.reqShift[salt]||0);return s%list.length}
 let nReq=0;function showNailReq(){nReq=dayPick(NREQ,1);const r=NREQ[nReq];$('#nailAv').textContent=r[0];$('#nailReq').innerHTML=`“${r[1]}”<div class="muted">${r[2].map(c=>'☐ '+c[0]).join(' · ')}</div>`}
